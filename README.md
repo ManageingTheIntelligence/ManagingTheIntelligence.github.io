@@ -1,1 +1,1 @@
-# managingtheintelligence.github.io
+# ManagingTheIntelligence.github.io
