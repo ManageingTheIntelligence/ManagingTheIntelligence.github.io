@@ -1,1 +1,0 @@
-# ManagingTheIntelligence.github.io
