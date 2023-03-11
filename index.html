@@ -134,13 +134,15 @@ function downloadCSV() {
   const totalSavings = parseFloat(document.getElementById("result").value);
   const cumulativeData = [];
 
+  let currentYear = new Date().getFullYear();
   let cumulativeProfit = totalSavings - ((investmentAmount + subscription + installation) * room_num);
   cumulativeData.push(["Year", "Cumulative Profit"]);
-  cumulativeData.push(["1", cumulativeProfit.toFixed(2)]);
+  cumulativeData.push([currentYear.toString(), cumulativeProfit.toFixed(2)]);
 
   for (let i = 0; i < 9; i++) {
       cumulativeProfit = cumulativeProfit - (subscription * room_num) + totalSavings;
-      cumulativeData.push([(i+2).toString(), cumulativeProfit.toFixed(2)]);
+      currentYear++;
+      cumulativeData.push([currentYear.toString(), cumulativeProfit.toFixed(2)]);
   }
 
   // Create a CSV string from the data
@@ -159,7 +161,6 @@ function downloadCSV() {
   // Clean up
   document.body.removeChild(link);
 }
-
 
  
 
