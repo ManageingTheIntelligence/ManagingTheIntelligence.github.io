@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>MTI Return of Investment Calculator</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+<body>
+  <div class="logo">
+    <div class="logo-text">Managing the Intelligence</div>
+  </div><br>
+	<h2>MTI Calculator</h2><br>
+
+<form>
+    <label for="room_num"> Number of Rooms:</label>
+    <input type="number" id="room_num"><br>
+
+    <label for="investment_amount"> Investment Per Room:</label>
+    <input type="number" id="investment_amount"><br>
+
+    <label for="subscription">Subscription Fees:</label>
+    <input type="number" id="subscription"><br>
+
+    <label for="installation">Installation Fees:</label>
+    <input type="number" id="installation"><br>
+
+    <label for="hvac">HVAC Percentage:</label>
+    <input type="number" id="hvac"><br>
+  
+    <label for="occupancy">Occupancy Percentage:</label>
+    <input type="number" id="occupancy"><br>
+  
+    <label for="bill_file">Upload Bills:</label>
+    <input type="file" id="bill_file"><br>
+
+    <label for="result">Total Savings:</label>
+    <input type="number" id="result" readonly>
+    <button type="button" onclick="calculate()">Calculate Saving (€)</button><br>
+  
+    <label for="payback_result">Payback Period Per Month:</label><br>
+    <input type="number" id="payback_result" readonly>
+    <button type="button" onclick="calculatePayback()">Calculate Payback Period</button><br>
+    
+    <h4>Cumulative Profit Per Year (€):</h4>
+    <button type="button" onclick="calculateCumulative()">Calculate Cumulative Profit</button><br>
+    <div id="cumulativeResult"></div><br>
+  
+    <button type="button" onclick="downloadCSV()">Download CSV</button><br>
+
+</form>
+
+<script>
+   const multipliers = [0.5676, 0.5676, 0.5676, 0.5423, 0.5419, 0.4852, 0.4474, 0.4240, 0.4527, 0.5676, 0.5676, 0.5676];
+   function calculate() {
+  let hvacPercentage = parseFloat(document.getElementById("hvac").value);
+  let occupancy = parseFloat(document.getElementById("occupancy").value);
+  let total = 0;
+
+  let file = document.getElementById("bill_file").files[0];
+  let reader = new FileReader();
+  reader.onload = function(event) {
+    let csv = event.target.result;
+    let delimiter = getCSVDelimiter();
+    let rows = csv.split('\n');
+    for (let i = 0; i < 12; i++) {
+      let rowValues = rows[i].split(delimiter);
+      let billValue = rowValues[1].replace(",", ".");
+      let bill = parseFloat(billValue);
+      if (!isNaN(bill)) {
+        let multiplier = multipliers[i];
+        bill *= (hvacPercentage / 100);
+        bill *= multiplier;
+        total += bill;
+      }
+    }
+    let totalSavings = total;
+    if (!isNaN(occupancy) && occupancy !== 70) {
+      totalSavings *= (occupancy / 70);
+    }
+    document.getElementById("result").value = totalSavings.toFixed(2);
+  };
+  reader.readAsText(file);
+}
+
+
+function getCSVDelimiter() {
+  let locale = navigator.language || navigator.userLanguage;
+  if (locale.startsWith("pt")) {
+    return ";";
+  } else {
+    return ",";
+  }
+}
+
+
+
+function calculatePayback() {
+        const room_num = parseInt(document.getElementById("room_num").value);
+        const investmentAmount = parseInt(document.getElementById("investment_amount").value);
+        const subscription = parseInt(document.getElementById("subscription").value);
+        const installation = parseInt(document.getElementById("installation").value);
+        const totalSavings = parseFloat(document.getElementById("result").value);
+
+        const totalInvestment = room_num * (investmentAmount + subscription + installation );
+        const paybackPeriod = (totalInvestment / totalSavings)*12;
+
+        document.getElementById("payback_result").value = paybackPeriod.toFixed(2);
+        
+}
+
+
+// Calculate Cumulative    
+function calculateCumulative() {
+  const room_num = parseInt(document.getElementById("room_num").value);
+  const investmentAmount = parseInt(document.getElementById("investment_amount").value);
+  const subscription = parseInt(document.getElementById("subscription").value);
+  const installation = parseInt(document.getElementById("installation").value);
+  const totalSavings = parseFloat(document.getElementById("result").value);
+
+  let cumulativeProfit = totalSavings - ((investmentAmount + subscription + installation) * room_num);
+  let data = [cumulativeProfit.toFixed(2)];
+
+  for (let i = 0; i < 9; i++) {
+      cumulativeProfit = cumulativeProfit - (subscription * room_num) + totalSavings;
+      data.push(cumulativeProfit.toFixed(2));
+  }
+
+  let table = "<table><tr><th>Year</th><th>Cumulative Profit</th></tr>";
+  let currentYear = new Date().getFullYear();
+  for (let i = 0; i < data.length; i++) {
+  table += "<tr><td>" + (currentYear+i) + "</td><td> " + data[i] + " € </td></tr>";
+}
+table += "</table>";
+
+
+  document.getElementById("cumulativeResult").innerHTML = table;
+}
+
+function downloadCSV() {
+  // Get the data to download
+  const room_num = parseInt(document.getElementById("room_num").value);
+  const investmentAmount = parseInt(document.getElementById("investment_amount").value);
+  const subscription = parseInt(document.getElementById("subscription").value);
+  const installation = parseInt(document.getElementById("installation").value);
+  const totalSavings = parseFloat(document.getElementById("result").value);
+  const cumulativeData = [];
+
+  let currentYear = new Date().getFullYear();
+  let cumulativeProfit = totalSavings - ((investmentAmount + subscription + installation) * room_num);
+  cumulativeData.push(["Year", "Cumulative Profit"]);
+  cumulativeData.push([currentYear.toString(), cumulativeProfit.toFixed(2)]);
+
+  for (let i = 0; i < 9; i++) {
+      cumulativeProfit = cumulativeProfit - (subscription * room_num) + totalSavings;
+      currentYear++;
+      cumulativeData.push([currentYear.toString(), cumulativeProfit.toFixed(2)]);
+  }
+
+  // Create a CSV string from the data
+  const csv = cumulativeData.map(row => row.join(',')).join('\n');
+
+  // Create a download link
+  const link = document.createElement('a');
+  link.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+  link.setAttribute('download', 'cumulative_profit.csv');
+  link.style.display = 'none';
+  document.body.appendChild(link);
+
+  // Click the link to download the file
+  link.click();
+
+  // Clean up
+  document.body.removeChild(link);
+}
+
+ 
+
+</script>
